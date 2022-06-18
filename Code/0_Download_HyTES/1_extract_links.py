@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+## This file extracts the url links from each e-mail and writes it to a text file
+
 import sys
 import re
 

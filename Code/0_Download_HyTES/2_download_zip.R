@@ -1,3 +1,5 @@
+## This file uses the text.txt file to download each individual zip file and store it in the Raw data folder
+
 library(here)
 
 dir = '/Users/rstofer/Documents/GitHub/super-resolution/'
