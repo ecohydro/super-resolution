@@ -1,0 +1,26 @@
+{
+    "id": "8C42E3D6",
+    "path": "~/GitHub/super-resolution/Code/1_Organize_HyTES/0_get_segment_metadata.R",
+    "project_path": "Code/1_Organize_HyTES/0_get_segment_metadata.R",
+    "type": "r_source",
+    "hash": "910132388",
+    "contents": "",
+    "dirty": false,
+    "created": 1655774921133.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "42,0",
+        "scrollLine": "0"
+    },
+    "folds": "5|34|17|0|\n",
+    "lastKnownWriteTime": 1655775153,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1655775153402,
+    "read_only": false,
+    "read_only_alternatives": []
+}
