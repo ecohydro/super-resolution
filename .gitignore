@@ -1,11 +1,5 @@
-# Ignore Mac system files
 .DS_Store
-
-# Ignore .sh file
+*.out
 *.sh
-
-# Ignore Data folder
-Data/
-
-**/*.out
-**/*.Rout
+*.Rout
+/Data

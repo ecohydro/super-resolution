@@ -73,4 +73,56 @@ for (i in 1:nrow(final_metadata)){
 }
  
 # Write a shapefile of metadata information 
-st_write(run_metadata_sf, here("Data", "Run_Metadata", "metadata.shp"))
+#st_write(run_metadata_sf, here("Data", "Run_Metadata", "metadata.shp"))
+
+library(here)
+
+
+actual_done <- list.files(here("Data","Final","Emis"))
+actual_done
+total_done <- list.files(here("Data","Final","LST"))
+total_done
+need_to_do <- dplyr::setdiff(total_done, actual_done)
+need_to_do
+
+remove_tif <- function(x) {
+  new_x <- gsub(".tif","", x)
+  return(new_x)
+}
+
+new_list <- unlist(lapply(need_to_do, remove_tif))
+
+for(i in 1:length(new_list)){
+    write(new_list[i], file = here("Data","Final", "run_these.txt"), append = TRUE)
+}
+
+new_list[1]
+
+library(here)
+
+final_files <- list.files(here("Data","Final","LST"))
+
+# 233 runs are done so far
+done_runs <- unique(gsub("_.*", "", final_files))
+done_runs <- unique(gsub(".tif", "", done_runs))
+
+total_runs <- read.csv(here("Data","Run_Metadata", "run_metadata.csv"))
+total_runs <- total_runs[141:nrow(total_runs),]
+
+total_runs_name <- total_runs$Run_ID
+
+
+runs_to_do <- setdiff(total_runs_name, done_runs)
+setdiff(done_runs, total_runs_name)
+
+# There are 63 runs left to do, 43 need shapefiles still, 20 are ready to go!
+no_shape <- c()
+shape <- c()
+for(i in 1:length(runs_to_do)){
+    if (!file.exists(here("Data","Intermediate","HyTES_sf",runs_to_do[i]))){
+      no_shape <- c(no_shape, runs_to_do[i])
+    }
+    else{
+      shape <- c(shape, runs_to_do[i])
+    }
+}

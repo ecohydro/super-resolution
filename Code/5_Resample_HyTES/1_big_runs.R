@@ -4,12 +4,62 @@ library(here)
 library(sf)
 library(raster)
 library(tictoc)
+library(parallel)
+library(stringr)
 
 # Read in all relevant data
-run_keys <- read.csv2(here("Data","Intermediate","run_keys_2.csv"))[2:4]
+run_keys <- read.csv2(here("Data","Intermediate","run_keys_3.csv"))[2:4]
 completed_runs <- read.table(here("Data","Final", "complete_run.txt"))[,1]
-fat_runs <- "20210823KirunaSE2" #read.table(here("Data","Final","fat_runs.txt"))[,1]
+fat_runs <- read.table(here("Data","Final","fat_runs.txt"))[,1] #"20210823KirunaSE3" 20170608GarfieldCO2_822-2538
+fat_runs <- fat_runs[!(fat_runs %in% completed_runs)]
 
+# get the planet crs for a random planet raster
+planet_crs <- crs(raster(here("Data","Raw","PLANET", "2021-08", "1146-1554.tiff")))
+
+# a function that processes the hytes data over a planet image
+process_by_planet <- function(planet_filename, HyTES_p_crs){
+    # read in planet
+    PLANET <- brick(here("Data","Raw","PLANET", rundate, planet_filename))
+
+    # Unique planet ID
+    PLANET_ID <- str_split(planet_filename, '.t')[[1]][1]
+
+    # crop both planet and hytes to the overlapping extent
+    extent_intersection <- raster::intersect(extent(PLANET), extent(HyTES_p_crs))
+    if (is.null(extent_intersection)){
+        print("No overlap between Planet and HyTES; skipping")
+        return()
+    }
+
+    HyTES_crop <- st_crop(HyTES_p_crs, extent_intersection)
+    PLANET_crop <- crop(PLANET, extent_intersection)
+
+    if (nrow(HyTES_crop) == 0){
+        print("No HyTES observations; skipping")
+        return()
+    } 
+
+    #Resample Hytes to the planet raster
+    HyTES_raster_ver <- rasterize(HyTES_crop, PLANET, fun = mean)
+
+    # For some reason sometimes the HyTES isn't perfectly cropped and adds more past where there is RGB info
+    HyTES_raster_ver <- crop(HyTES_raster_ver, extent(PLANET_crop))
+
+    # generate and save layers
+    LST_layer <- HyTES_raster_ver[['LST']]
+    Emis_layer <- HyTES_raster_ver[['Emssvty']]
+    Surf_Rad_layer <- HyTES_raster_ver[['Srfc_Rd']]
+
+    writeRaster(LST_layer, here("Data", "Final", "LST", paste0(run_id,"_",PLANET_ID,".tif")), overwrite=TRUE)
+    writeRaster(PLANET_crop, here("Data", "Final", "RGB", paste0(run_id,"_",PLANET_ID,".tif")), overwrite=TRUE)
+    writeRaster(Emis_layer, here("Data", "Final", "Emis", paste0(run_id,"_",PLANET_ID,".tif")), overwrite=TRUE)
+    writeRaster(Surf_Rad_layer, here("Data", "Final", "Srfc_Rad", paste0(run_id,"_",PLANET_ID,".tif")), overwrite=TRUE)
+
+    print(paste0(run_id, ": Finished ", PLANET_ID, " out of ", length(file_names)))
+
+    return()
+    
+}
 
 for(i in 1:length(fat_runs)){
     run_id <- fat_runs[i]
@@ -30,39 +80,20 @@ for(i in 1:length(fat_runs)){
     if (substr(file_names, 1, 1) == 'c'){
         file_names <- unlist(strsplit(substr(run_info[3], 3, nchar(run_info[3])-1), ", "))
     }
-    first <- TRUE
-    for (j in 1:length(file_names)){
-        if (first == FALSE){
-            PLANET <- brick(here("Data","Raw","PLANET", rundate, file_names[j]))
-            HyTES_crop <- st_crop(HyTES_new, extent(PLANET))
-            PLANET_crop <- crop(PLANET, extent(HyTES_new))
-            HyTES_raster_ver <- rasterize(HyTES_crop, PLANET, fun = mean)
-            LST_layer <- HyTES_raster_ver[[4]]
-            Emis_layer <- HyTES_raster_ver[[5]]
-            Surf_Rad_layer <- HyTES_raster_ver[[6]]
-            writeRaster(LST_layer, here("Data", "Final", "LST", paste0(run_id,"_",j,".tif")))
-            writeRaster(PLANET_crop, here("Data", "Final", "RGB", paste0(run_id,"_",j,".tif")))
-            writeRaster(Emis_layer, here("Data", "Final", "Emis", paste0(run_id,"_",j,".tif")))
-            writeRaster(Surf_Rad_layer, here("Data", "Final", "Srfc_Rad", paste0(run_id,"_",j,".tif")))
-            print(paste0(run_id, ": Finished ", j, " out of ", length(file_names)))
-        }
-        else{
-            PLANET <- brick(here("Data","Raw","PLANET", rundate, file_names[j]))
-            HyTES_sf <- st_read(shapefile_dir)
-            HyTES_new <- st_transform(HyTES_sf, crs(PLANET))
-            HyTES_crop <- st_crop(HyTES_new, extent(PLANET))
-            PLANET_crop <- crop(PLANET, extent(HyTES_new))
-            HyTES_raster_ver <- rasterize(HyTES_crop, PLANET, fun = mean)
-            LST_layer <- HyTES_raster_ver[[4]]
-            Emis_layer <- HyTES_raster_ver[[5]]
-            Surf_Rad_layer <- HyTES_raster_ver[[6]]
-            writeRaster(LST_layer, here("Data", "Final", "LST", paste0(run_id,"_",j,".tif")))
-            writeRaster(PLANET_crop, here("Data", "Final", "RGB", paste0(run_id,"_",j,".tif")))
-            writeRaster(Emis_layer, here("Data", "Final", "Emis", paste0(run_id,"_",j,".tif")))
-            writeRaster(Surf_Rad_layer, here("Data", "Final", "Srfc_Rad", paste0(run_id,"_",j,".tif")))
-            print(paste0(run_id, ": Finished ", j, " out of ", length(file_names)))
-            first <- FALSE
-        }
-    }
+
+    HyTES_sf <- st_read(shapefile_dir)
+    HyTES_p_crs <- st_transform(HyTES_sf, planet_crs)
+
+    # process everything in parallel. May need to reduce the number of cores to prevent the system from running out of memory
+    no_cores <- 8 #parallel::detectCores()
+    cl <- makeCluster(no_cores, type="FORK")
+    parLapply(cl, file_names, process_by_planet, HyTES_p_crs)
+    stopCluster(cl)
+
+    # if you don't want to process in parallel, go for sequential:
+    # for (file in file_names){
+    #     process_by_planet(file, HyTES_p_crs)
+    # }
+
     write(run_id, file = here("Data","Final", "complete_run.txt"), append = TRUE)
 }
