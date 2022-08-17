@@ -1,5 +1,7 @@
+### This file downloads each .zip file and saves it to the Raw HyTES folder.
 library(here)
 
+# This function unzips the file and places it in a directory (exdir)
 unzip <- function(file, exdir, .file_cache = FALSE) { #the normal unzip doesn't work well with large files. 
   
   if (.file_cache == TRUE) {
@@ -33,6 +35,7 @@ unzip <- function(file, exdir, .file_cache = FALSE) { #the normal unzip doesn't 
   }
 }   
 
+# This funbction downloads the extracted data
 download_extract <- function(url, directory, new_folder){
   dir.create(here(directory, new_folder))
   destination <- here(directory, new_folder, paste0(new_folder, ".zip"))
@@ -41,6 +44,7 @@ download_extract <- function(url, directory, new_folder){
   unlink(destination)
 }
 
+# This function processes the file given filepath
 processFile = function(filepath) {
   lines <- list()
   con = file(filepath, "r")
