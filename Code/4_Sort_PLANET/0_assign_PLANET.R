@@ -34,14 +34,14 @@ for (k in 1:length(list.files(path = here("Data","Raw","PLANET")))){
     }
 }
 
+# Finalize PLANET data frame
 colnames(PLANET) <- c('file_name','date','x_min','x_max','y_min','y_max')
 PLANET <- PLANET %>% transform(x_min = as.numeric(x_min),
                                x_max = as.numeric(x_max),
                                y_min = as.numeric(y_min),
                                y_max = as.numeric(y_max))
 
-run_keys <- data.frame(matrix(ncol = 2, nrow = 0))
-
+# Create a polygon of the extents for each HyTES observation
 lst <- lapply(1:nrow(metadata), function(x){
   ## create a matrix of coordinates that also 'close' the polygon
   res <- matrix(c(metadata[x, 'Min_Longitude'], metadata[x, 'Min_Latitude'],
@@ -54,6 +54,7 @@ lst <- lapply(1:nrow(metadata), function(x){
   st_polygon(list(res))
 })
 
+# Create a polygon of the extents for each PLANET observation
 planet_lst <- lapply(1:nrow(PLANET), function(x){
   ## create a matrix of coordinates that also 'close' the polygon
   res <- matrix(c(PLANET[x, 'x_min'], PLANET[x, 'y_min'],
@@ -66,6 +67,7 @@ planet_lst <- lapply(1:nrow(PLANET), function(x){
   st_polygon(list(res))
 })
 
+# Retrieve the date of HyTES run in the form of year-month
 get_date <- sapply(1:nrow(metadata), function(x){
     yr_mo <- substr(metadata[x,4], 1, 7)
 })
@@ -74,74 +76,39 @@ get_date <- sapply(1:nrow(metadata), function(x){
 HyTES_sf <- st_sf(Run_ID = metadata[,'Run_ID'], date = get_date, st_sfc(lst))
 PLANET_sf <- st_sf(file_name = PLANET[,'file_name'], date = PLANET[,'date'], st_sfc(planet_lst))
 
-
+# Initializes list
 file_names <- list()
 
+# Assigns correct PLANET files for each HyTES run
 for (i in 1:nrow(HyTES_sf)){
     PLANET_files <- c()
+    # Goes through all PLANET files for each run
     for (j in 1:nrow(PLANET_sf)){
         if(HyTES_sf$date[i] == PLANET_sf$date[j]){
+            # If the HyTES run is contained in a single shape file, record name of shape file and break
             if (st_contains(st_geometry(PLANET_sf[j,]), st_geometry(HyTES_sf[i,]), sparse = FALSE) == TRUE){
                 PLANET_files <- c(PLANET_sf$file_name[j])
                 break
             }            
+            # If there is any overlap between PLANET file and HyTES file, record name of PLANET file and append to vector
             if (st_overlaps(st_geometry(HyTES_sf[i,]), st_geometry(PLANET_sf[j,]), sparse = FALSE) == TRUE){
                 PLANET_files <- c(PLANET_files, PLANET_sf$file_name[j])
             }
         }
     }
     print(PLANET_files)
+    # If there are no PLANET files associated to run, label as NA
     if (length(PLANET_files) == 0){
         file_names[[i]] <- NA
     }
+    # Set file_names to observation
     else{
         file_names[[i]] <- PLANET_files
     }
 }
 
+# Make a data frame containing run id, date in the form of year-month, and associated PLANET file names
 new_run_keys <- data.frame('run_id' = metadata[,'Run_ID'], 'date' = get_date, 'file_names' = I(file_names))
 
-write.csv2(new_run_keys, here("Data","Intermediate","run_keys_3.csv"))
-
-
-# for(i in 1:nrow(metadata)){
-#     point_1 <- c(x_min[i,1], y_min[i,1])
-#     point_2 <- c(x_min[i,1], y_max[i,1])
-#     point_3 <- c(x_max[i,1], y_min[i,1])
-#     point_4 <- c(x_max[i,1], y_max[i,1])
-#     yr_mo <- substr(metadata[i,4], 1, 7)
-#     index_1 <- locate(point_1, yr_mo)
-#     index_2 <- locate(point_2, yr_mo)
-#     index_3 <- locate(point_3, yr_mo)
-#     index_4 <- locate(point_4, yr_mo)
-#     if (index_1 == (nrow(PLANET)+1) | index_2 == (nrow(PLANET)+1) | index_3 == (nrow(PLANET)+1) | index_4 == (nrow(PLANET)+1)){
-#         next
-#     }    
-#     quad_1 <- PLANET[index_1, 1]
-#     quad_2 <- PLANET[index_2, 1]
-#     quad_3 <- PLANET[index_3, 1]
-#     quad_4 <- PLANET[index_4, 1]
-#     quads <- list(quad_1, quad_2, quad_3, quad_4)
-#     observation <- c(metadata[i,3], yr_mo, as.list(quads))
-#     run_keys <- run_keys %>% rbind(observation)
-# }
-
-# colnames(run_keys) <- c('run_id', 'date', 'file_name_1', 'file_name_2', 'file_name_3', 'file_name_4')
-
-# write.csv(run_keys, here("Data","Intermediate","run_keys_2.csv"))
-
-# locate <- function(point, time){
-#     i = 1
-#     for(j in 1:nrow(PLANET)){
-#         within_x <- (as.numeric(point[1]) > as.numeric(PLANET[j,3])) & (as.numeric(point[1]) < as.numeric(PLANET[j,4]))
-#         within_y <-  (as.numeric(point[2]) > as.numeric(PLANET[j,5])) & (as.numeric(point[2]) < as.numeric(PLANET[j,6]))
-#         right_date <- time == PLANET[j, 2]
-#         if (within_x & within_y & right_date){
-#             break
-#         }
-#         else{
-#             i = i + 1 
-#         } 
-#     }
-#     return(i)
-# }
+# Write to .csv file
+write.csv2(new_run_keys, here("Data","Intermediate","run_keys.csv"))

@@ -1,4 +1,4 @@
-### This file extracts all relevant metadata information for each run
+### This file extracts all relevant metadata information for each run writes information to Run_Metadata folder.
 
 library(here)
 library(dplyr)

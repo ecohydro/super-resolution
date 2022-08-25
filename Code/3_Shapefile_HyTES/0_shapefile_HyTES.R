@@ -1,4 +1,4 @@
-### This file converts .hdf5 data frames into shape files and saves them in the same folder.
+### This file converts .hdf5 and .csv data sets into shape files and saves them in the same folder. Also creates surface radiance column.
 
 library(here)
 library(dplyr)
@@ -38,7 +38,6 @@ for (i in 1:nrow(run_name)){
     }
     if (run_name[i,] %in% wrong_dim){
         print(paste(run_name[i,], "has wrong dim, next!"))
-        next
     }
     if (run_name[i,] %in% file_error){
         print(paste(run_name[i,], "has wrong data, next!"))
@@ -88,7 +87,7 @@ for (i in 1:nrow(run_name)){
                                      Steps = as.vector(L1_data[['pixel_geolocation']][4,,]))                       
         }
         if (is_L2) {
-            # Opens L2 HDF5 file
+            # Opens L2 HDF5 file. If it fails to open, record and move on.
             if ("try-error" %in% class(try(H5File$new(file_dir, mode = 'r')))){
                 print(paste(run_name[i,],"can't open L2 data, next!"))
                 write(run_name[i,], file = here("Data","Intermediate", "file_error.txt"), append = TRUE)
@@ -156,6 +155,7 @@ for (i in 1:nrow(run_name)){
             # Else it removes the observation from the run data frame, but stores file name to a text file
             else{
                 write(run_name[i,], file = here("Data","Intermediate", "wrong_dim.txt"), append = TRUE)
+                print(paste(run_name[i,],' still has wrong dim, next :('))
                 next 
             }
         }

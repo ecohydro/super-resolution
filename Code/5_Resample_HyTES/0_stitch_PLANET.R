@@ -1,17 +1,19 @@
-### For each run, stitch relevant PLANET files and convert to rasters for model
+### For each run, stitch relevant PLANET files, crop the PLANET data to the extent of the run, and convert resampled HyTES data to rasters for model
 
 library(here)
 library(sf)
 library(raster)
 library(tictoc)
 
-# Crop the PLANET data to the extent of the run
-run_keys <- read.csv2(here("Data","Intermediate","run_keys_3.csv"))[2:4]
+# Load in relevant data files
+run_keys <- read.csv2(here("Data","Intermediate","run_keys.csv"))[2:4]
 completed_runs <- read.table(here("Data","Final", "complete_run.txt"))[,1]
 fat_runs <- read.table(here("Data","Final","fat_runs.txt"))[,1]
 
+# Counter indicator to see how many runs have been completed so far
 counter <- 0 
 
+# Goes through each run
 for (j in 1:nrow(run_keys)){
     run_id <- run_keys[j,1]
     # If the run is already completed, move on to the next run
@@ -38,13 +40,14 @@ for (j in 1:nrow(run_keys)){
         file_names <- unlist(strsplit(substr(run_keys[j,3], 3, nchar(run_keys[j,3])-1), ", "))
     }
     first = TRUE
-    # Creates PLANET data set by initializing brick with the first observation. Then, merges more PLANET data to original brick.
     tic()
+    # If there are more than 4 PLANET files associated to the run, record it to a .txt file and move on
     if (length(file_names) > 4){
         write(run_id, file = here("Data","Final", "fat_runs.txt"), append = TRUE)
         print(paste(run_id, "is too big, it's been recorded. next!"))
         next
     }
+    # Creates PLANET data set by initializing brick with the first observation. Then, merges more PLANET data to original brick.
     for (i in 1:length(file_names)){
         if (first == FALSE){
             PLANET_old <- brick(here("Data","Raw","PLANET", rundate, file_names[i]))
@@ -65,6 +68,7 @@ for (j in 1:nrow(run_keys)){
     toc()
     tic()
     extent_intersection <- raster::intersect(extent(PLANET), extent(HyTES_new))
+    # If there is no overlap, move on
     if (is.null(extent_intersection)){
         print("No overlap between Planet and HyTES; skipping")
         next

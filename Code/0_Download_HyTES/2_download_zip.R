@@ -65,7 +65,7 @@ options(timeout = max(30000, getOption("timeout"))) #timeout for download.file i
 # Download all url links
 ################################################################################
 
-links = processFile(here('Data','text.txt'))
+links = processFile(here('Data','Raw','links.txt'))
 
 for (link in links){
   new_folder <- substr(link, 44, nchar(link) - 4)

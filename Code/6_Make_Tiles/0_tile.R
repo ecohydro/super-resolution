@@ -47,6 +47,7 @@ if (file.exists(here(output_dir, "done_files.txt"))){
   done_files <- read.csv(here(output_dir, "done_files.txt"), header = FALSE)[,1]
   filenames <- filenames[!(filenames %in% done_files)]
 }
+print(length(filenames))
 
 # maximum proportion of na values in a file to still be written
 na_threshold = .90
@@ -164,7 +165,7 @@ tile_image <- function(file){
   for (y_start in y_starts){
     # lapply(x_starts, make_tiles, y_start, file)
     
-    # in parallel -- don't do if running in parallel over this funtion too.
+    # in parallel -- don't do if running in parallel over this funtion too. Surprisingly, this actually seems slower than just lapply??
     no_cores <- parallel::detectCores()
     cl <- makeCluster(no_cores, type="FORK")
     parLapply(cl, x_starts, make_tiles, y_start, file)

@@ -37,9 +37,10 @@ pixel_size = 5
 
 # if this script has already been run and some runs are already processed: 
 if (file.exists(here(output_dir, paste0("done_files", tile_size, "_", input_size, "_", output_size, ".txt")))){
-  done_files <- read.csv(paste0("done_files", tile_size, "_", input_size, "_", output_size, ".txt"), header = FALSE)[,1]
+  done_files <- read.csv(here(output_dir, paste0("done_files", tile_size, "_", input_size, "_", output_size, ".txt")), header = FALSE, sep = " ")[,1]
   filenames <- filenames[!(filenames %in% done_files)]
 }
+print(length(filenames))
 
 input_scale = as.integer(input_size/pixel_size)
 output_scale = as.integer(output_size/pixel_size)

@@ -22,8 +22,7 @@ processFile = function(filepath) {
 }
 
 # Opens and reads the text file with url links
-# REPLACE WITH CORRECT DIRECTORY here("Data","text.txt")
-links = processFile(here("Data","text.txt"))
+links = processFile(here("Data","Raw","links.txt"))
 
 # Creates empty data frame to store metadata
 metadata <- data.frame(matrix(ncol = 9, nrow = 0))
@@ -63,7 +62,7 @@ for (link in links){
 }
 
 # Reads master sheet of metadata provided by Gerardo Rivera
-HyTES_excel <- read_excel(here("Data",'Raw',"hytes_anna_boser_UCSB_22Jun2022.xlsx"))
+HyTES_excel <- read_excel(here("Data","Raw","metadata.xlsx"))
 
 # Filters data to remove ER2 flights and also create the correct time columns
 HyTES_metadata <- HyTES_excel %>% filter(Aircraft != 'ER2') %>% 

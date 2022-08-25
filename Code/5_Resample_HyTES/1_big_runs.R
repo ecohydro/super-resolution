@@ -8,7 +8,7 @@ library(parallel)
 library(stringr)
 
 # Read in all relevant data
-run_keys <- read.csv2(here("Data","Intermediate","run_keys_3.csv"))[2:4]
+run_keys <- read.csv2(here("Data","Intermediate","run_keys.csv"))[2:4]
 completed_runs <- read.table(here("Data","Final", "complete_run.txt"))[,1]
 fat_runs <- read.table(here("Data","Final","fat_runs.txt"))[,1] #"20210823KirunaSE3" 20170608GarfieldCO2_822-2538
 fat_runs <- fat_runs[!(fat_runs %in% completed_runs)]
