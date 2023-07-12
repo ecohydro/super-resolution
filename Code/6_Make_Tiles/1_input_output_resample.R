@@ -10,16 +10,28 @@ library(parallel)
 
 # parameters and dirs -------------------------------------------------------------- 
 
+# tile_size of the inputs
+tile_size = 1024 
+
+# input and output size
+input_size = 100
+output_size = 10
+pixel_size = 5
+
+# what are you scaling the image by? 
+input_scale = as.integer(input_size/pixel_size)
+output_scale = as.integer(output_size/pixel_size)
+
+# output tile size
+output_tile_size = tile_size/output_scale
+
 #input directories
-input_dir <- here("Data", "Tiles")
+input_dir <- here("Data", paste0("Tiles_", tile_size))
 target = "LST"
 basemap = "RGB"
 
-# tile_size of the inputs
-tile_size = 672 # divisible by 14 (ECOSTRESS to 5m) and 24 (Landsat)
-
 # output dir
-output_dir = here("Data", "For_CNN")
+output_dir = here("Data", paste("For_CNN_", output_tile_size))
 
 # list all the files
 filenames <- c()
@@ -30,20 +42,12 @@ print(length(filenames)/2)
 filenames = filenames[duplicated(filenames)] # ensure they are in all variable folders -- for example this might not be the case if we dropped some RGB images because of missing data (see 0_tile.R)
 print(length(filenames))
 
-# input and output size
-input_size = 70
-output_size = 10
-pixel_size = 5
-
 # if this script has already been run and some runs are already processed: 
-if (file.exists(here(output_dir, paste0("done_files", tile_size, "_", input_size, "_", output_size, ".txt")))){
-  done_files <- read.csv(here(output_dir, paste0("done_files", tile_size, "_", input_size, "_", output_size, ".txt")), header = FALSE, sep = " ")[,1]
+if (file.exists(here(output_dir, paste0("done_files_", output_tile_size, "_", input_size, "_", output_size, ".txt")))){
+  done_files <- read.csv(here(output_dir, paste0("done_files_", output_tile_size, "_", input_size, "_", output_size, ".txt")), header = FALSE, sep = " ")[,1]
   filenames <- filenames[!(filenames %in% done_files)]
 }
 print(length(filenames))
-
-input_scale = as.integer(input_size/pixel_size)
-output_scale = as.integer(output_size/pixel_size)
 
 # function to create the input and output from a file --------------------------------------------------------------
 
@@ -59,7 +63,7 @@ in_out_put <- function(file){
     target_outsize = raster::aggregate(target_im, output_scale)
 
     # save the model output
-    output_dir_outputs = here(output_dir, "outputs", paste0(target, "_", tile_size, "_", output_size))
+    output_dir_outputs = here(output_dir, "outputs", paste0(target, "_", output_tile_size, "_", output_size))
     if (!dir.exists(output_dir_outputs)){
         dir.create(output_dir_outputs, recursive = TRUE)
     }
@@ -72,7 +76,7 @@ in_out_put <- function(file){
     target_insize = raster::resample(target_insize, target_outsize, method = "ngb")
 
     # save the model target input
-    output_dir_target_inputs = here(output_dir, "inputs", paste0(target, "_", tile_size, "_", input_size, "_", output_size))
+    output_dir_target_inputs = here(output_dir, "inputs", paste0(target, "_", output_tile_size, "_", input_size, "_", output_size))
     if (!dir.exists(output_dir_target_inputs)){
         dir.create(output_dir_target_inputs, recursive = TRUE)
     }
@@ -82,7 +86,7 @@ in_out_put <- function(file){
     basemap_outsize = raster::aggregate(basemap_im, output_scale)
 
     # save the model basemap input
-    output_dir_basemap_inputs = here(output_dir, "inputs", paste0(basemap, "_", tile_size, "_", output_size))
+    output_dir_basemap_inputs = here(output_dir, "inputs", paste0(basemap, "_", output_tile_size, "_", output_size))
     if (!dir.exists(output_dir_basemap_inputs)){
         dir.create(output_dir_basemap_inputs, recursive = TRUE)
     }
@@ -91,14 +95,14 @@ in_out_put <- function(file){
     # add the mean and standard deviation of each band to a running file -------------------
 
     # target info
-    target_mean_sd = here(output_dir, paste0("target_mean_sd_files", tile_size, "_", input_size, "_", output_size, ".txt"))
+    target_mean_sd = here(output_dir, paste0("target_mean_sd_files_", output_tile_size, "_", input_size, "_", output_size, ".txt"))
     if (!file.exists(target_mean_sd)){
         write(paste("file", "mean", "sd"), target_mean_sd, append = TRUE)
     }
     write(paste(file, mean(target_im[], na.rm = TRUE), sd(target_im[], na.rm = TRUE)), target_mean_sd, append = TRUE)
 
     # basemap info
-    basemap_mean_sd = here(output_dir, paste0("basemap_mean_sd_files", tile_size, "_", input_size, "_", output_size, ".txt"))
+    basemap_mean_sd = here(output_dir, paste0("basemap_mean_sd_files_", output_tile_size, "_", input_size, "_", output_size, ".txt"))
     if (!file.exists(basemap_mean_sd)){
         means = paste(paste0("mean", 1:dim(basemap_im)[3]), collapse = " ")
         sds = paste(paste0("sd", 1:dim(basemap_im)[3]), collapse = " ")
@@ -110,7 +114,7 @@ in_out_put <- function(file){
     
 
     # add this file to the list of processed files -------------------
-    write(file, here(output_dir, paste0("done_files", tile_size, "_", input_size, "_", output_size, ".txt")), append = TRUE)
+    write(file, here(output_dir, paste0("done_files_", output_tile_size, "_", input_size, "_", output_size, ".txt")), append = TRUE)
     print(paste0("done with run", file))
 }
 

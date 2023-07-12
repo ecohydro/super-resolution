@@ -3,3 +3,5 @@
 *.sh
 *.Rout
 /Data
+.RData
+.Rhistory

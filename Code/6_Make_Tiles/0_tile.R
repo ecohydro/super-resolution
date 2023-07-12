@@ -20,11 +20,14 @@ library(tictoc)
 input_dir <- here("Data", "Final")
 variables <- c("LST", "RGB")
 
-# output file
-output_dir = here("Data", "Tiles")
-
 # tile_size
-tile_size = 672 # divisible by 14 (ECOSTRESS to 5m) and 24 (Landsat)
+tile_size = 1024
+
+# maximum proportion of na values in a file to still be written
+na_threshold = .90
+
+# output file
+output_dir = here("Data", paste0("Tiles_", tile_size))
 
 # generate output folder if it doesn't exist yet
 if (!dir.exists(output_dir)){
@@ -48,9 +51,6 @@ if (file.exists(here(output_dir, "done_files.txt"))){
   filenames <- filenames[!(filenames %in% done_files)]
 }
 print(length(filenames))
-
-# maximum proportion of na values in a file to still be written
-na_threshold = .90
 
 # function to generate a tile from x and y starts --------------------------------------------------------------
 make_tiles <- function(x_start, y_start, file){
@@ -174,7 +174,7 @@ tile_image <- function(file){
   }
 
  write(file, here(output_dir, "done_files.txt"), append = TRUE)
- print(paste0("done with run", file))
+ print(paste0("done with run ", file))
  toc()
 }
 
